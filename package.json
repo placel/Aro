@@ -1,0 +1,28 @@
+{
+  "name": "googlestreamer",
+  "version": "1.0.0",
+  "description": "Stream Movies & TV Shows to ChromeCast using Google Assistant",
+  "main": "./src/index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Logan Place",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "castv2-client": "^1.2.0",
+    "discord.js": "^13.5.0",
+    "http-server": "^14.1.0",
+    "jssoup": "^0.0.15",
+    "mdns-js": "^1.0.3",
+    "puppeteer": "^13.1.2",
+    "puppeteer-extra": "^3.2.3",
+    "puppeteer-extra-plugin-stealth": "^2.9.0",
+    "python": "^0.0.4",
+    "python3": "^0.0.1",
+    "random-useragent": "^0.5.0",
+    "request": "^2.88.2",
+    "selenium": "^2.20.0",
+    "user-agents": "^1.0.909"
+  }
+}
