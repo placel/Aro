@@ -146,10 +146,11 @@ function ondeviceup(content, videoUrl, subtitleUrl, thumbnailUrl, host) {
 
           textTrackStyle: {
             backgroundColor: '#FFFFFF00', // FFFFFF is for white, and 00 is for opacity
-            foregroundColor: '#FFFFFFF', // see http://dev.w3.org/csswg/css-color/#hex-notation
-            edgeType: 'NONE', // can be: "NONE", "OUTLINE", "DROP_SHADOW", "RAISED", "DEPRESSED"
+            foregroundColor: '#FFFFFFFF', // see http://dev.w3.org/csswg/css-color/#hex-notation
+            edgeType: 'DROP_SHADOW', // can be: "NONE", "OUTLINE", "DROP_SHADOW", "RAISED", "DEPRESSED"
+            edgeColor: '#00000095', // see http://dev.w3.org/csswg/css-color/#hex-notation
             fontScale: 1, // transforms into "font-size: " + (fontScale*100) +"%"
-            fontStyle: 'NORMAL', // can be: "NORMAL", "BOLD", "BOLD_ITALIC", "ITALIC",
+            fontStyle: 'BOLD', // can be: "NORMAL", "BOLD", "BOLD_ITALIC", "ITALIC",
             fontFamily: 'Verdana', // specific font family
             fontGenericFamily: 'SANS_SERIF', // can be: "SANS_SERIF", "MONOSPACED_SANS_SERIF", "SERIF", "MONOSPACED_SERIF", "CASUAL", "CURSIVE", "SMALL_CAPITALS",
             windowType: 'NONE' // can be: "NONE", "NORMAL", "ROUNDED_CORNERS"
@@ -223,7 +224,7 @@ function convertToVTT(data) {
   let vtt = "WEBVTT\n\n";
 
   cueList.forEach((caption) => {
-    vtt += createVTTCue(caption)
+    try { vtt += createVTTCue(caption) } catch (e) { }
   });
 
   return vtt;
@@ -259,4 +260,4 @@ function createVTTCue(caption) {
   return cue;
 }
 
-client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.dECdz8mwcsBLz5YJz8qeKnjZPQg');
+client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.-2nNSWnx8QbG2DL9xOpkFvDE-dw');

@@ -222,11 +222,11 @@ async function scrapeTVUrl(content, date, season, episode) {
     await page.waitForNetworkIdle({ idleTime: 300});
     const listing = await page.evaluate((season, episode) => {
         thumbnail = document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src
-        
         const index = Array.from(document.querySelectorAll("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-sm-12.col-lg-12 > div")).findIndex(v => v.innerText.includes(`${season} :`))
         const episodes = document.querySelectorAll(`body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-sm-12.col-lg-12 > div:nth-child(${index + 2}) > div > div > a`);
 
         for (let i = 0; i < episodes.length; i++) {
+            console.log(season)
             if (episode == episodes[i].innerText.split(".")[0]) { 
                 if (episode + 1 > episodes.length) {
                     season += 1;
@@ -239,31 +239,52 @@ async function scrapeTVUrl(content, date, season, episode) {
         }
     }, season, episode);
 
-    await page.tracing.start();
-    await page.waitForSelector('.panel-player' );
+    // await page.tracing.start();
+    // try { await page.waitForSelector('.panel-player', {timeout: 500} ); } catch(e) { }
+    let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
+    let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+    //console.log(video)
 
-    try { await page.waitForNetworkIdle({timeout: 2500}); } catch (e) {}
-    let tracing = JSON.parse(await page.tracing.stop()); 
+    // try { await page.waitForNetworkIdle({timeout: 2500}); } catch (e) {}
+    // let tracing = JSON.parse(await page.tracing.stop()); 
     // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
-    const responses = tracing.traceEvents
-    let video, subtitle;
+    // const responses = tracing.traceEvents.filter(te => te.name === "ResourceReceiveRequest")
+    // const responses = tracing.traceEvents
+    // responses.forEach(x => {
+    //     if (map.includes(x['name'])) {
+    //         return
+    //     } else {
+    //         map.push(x['name']);
+    //     }
+    // })
+    // console.log(responses)
+    // responses.forEach(x => console.log(x.args.data))
+    // responses.forEach(x => console.log(x))
+
     // BETTER: return url instead of aborting
     // page.on('request', async (request) => {
-    //     if(request.url() === `${url}/assets/iovation-first-third.js` ){
+        //     if(request.url() === `${url}/assets/iovation-first-third.js` ){
+            
+            //         log(`request url is ${request.url()}: aborting`, 'warn');
+            //         return request.abort();
+            //     }
+            
+    // page.on('response', r => {
+    //     if (r.url().includes('.mp4')) { video = r.url(); console.log(r.url()) }
+    //     else if (r.url().includes('English.srt')) { subtitle = r.url(); }
+    // });
 
-    //         log(`request url is ${request.url()}: aborting`, 'warn');
-    //         return request.abort();
-    //     }
     console.log(page.url())
-    responses.forEach((val) => {
-        try {
-            temp = val['args']['data']['url'];
-            if (temp.includes('.mp4')) { video = temp; }
-            else if (temp.includes('English.srt')) { subtitle = temp; }
-        } catch(e) { }
-    })
-
-    return { season: listing.season, episode: listing.episode, videoUrl: video, subtitleUrl: subtitle, thumbnailUrl: listing.thumbnail }
+    // responses.forEach((val) => {
+    //     try {
+    //         temp = val['args']['data']['url'];
+    //         if (temp.includes('.mp4')) { video = temp; }
+    //         else if (temp.includes('English.srt')) { subtitle = temp; }
+    //     } catch(e) { }
+    // })
+    
+    // console.log(video)
+    return { season: listing.season, episode: listing.episode, videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: listing.thumbnail }
 };
 
 async function scrapeMovieURL(content, date) {
@@ -304,22 +325,25 @@ async function scrapeMovieURL(content, date) {
         return document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src
     })
 
-    try {await page.waitForNetworkIdle({timeout: 2500});} catch(e) {}
-    let tracing = JSON.parse(await page.tracing.stop()); 
-    // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
-    const responses = tracing.traceEvents
-    let video, subtitle;
-    responses.forEach((val) => {
-        try {
-            if (val['args']['data']['url'].includes("mp4")) {
-                video = val['args']['data']['url']
-            } else if (val['args']['data']['url'].includes("English.srt")) {
-                subtitle = val['args']['data']['url']
-            }
-        } catch(e) {}
-    })
+    // try {await page.waitForNetworkIdle({timeout: 2500});} catch(e) {}
+    // let tracing = JSON.parse(await page.tracing.stop()); 
+    // // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
+    // const responses = tracing.traceEvents
+    // let video, subtitle;
+    // responses.forEach((val) => {
+    //     try {
+    //         if (val['args']['data']['url'].includes("mp4")) {
+    //             video = val['args']['data']['url']
+    //         } else if (val['args']['data']['url'].includes("English.srt")) {
+    //             subtitle = val['args']['data']['url']
+    //         }
+    //     } catch(e) {}
+    // })
 
-    return { videoUrl: video, subtitleUrl: subtitle, thumbnailUrl: thumbnail }
+    let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
+    let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+
+    return { videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: thumbnail }
 }
 
 async function scrapeSubtitles(url) {
