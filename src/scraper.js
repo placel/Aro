@@ -23,44 +23,6 @@ const cleanContent = (content) => {
     return content.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s/g,"").toLowerCase();
 }
 
-// const enterSite = async (page) => {
-
-//     // Go directly to keyword search, then use entersite method, then go directlty to keyword again
-
-//     // Handles 503 server error by iterating through array of URLs until it works
-//     let index;
-//     for (let i = 0; i < 1; i++) {
-//         console.log(`I: ${i}`)
-//         if (i != 0) {
-//             if (!page.url().includes('enter.html')) {  break }
-//         }
-//         console.log(URL[i] + '/enter.html')
-//         await page.goto(URL[i] + '/enter.html');
-
-//         try { await page.waitForSelector('h1', {timeout: 100}); } catch (e) { index = i; await page.waitForTimeout(200); }
-        
-//         try {
-//             await page.waitForNetworkIdle({ idleTime: 500 });
-
-//             await page.waitForSelector('.btn-success', { timeout: 200,});
-//             await page.click('.btn-success');
-//             // for (let j = 0; j < 10; j++) {
-//             //     console.log(`J: ${j}`)
-//             //     // if (!page.url().includes('enter.html')) {  break }
-//             //     await page.waitForNetworkIdle({ idleTime: 500 });
-//             //     console.log("\n\n")
-//             //     console.log(`1`)
-//             //     await page.waitForSelector('.btn-success', { timeout: 200,});
-//             //     console.log(`2`)
-//             //     await page.click('.btn-success');
-//             //     console.log(`3`)
-//             // } 
-//         } catch (e) { break }
-//     }
-
-//     return index;
-// }
-
 const enterSite = async (page) => {
 
     // Go directly to keyword search, then use entersite method, then go directlty to keyword again
@@ -188,22 +150,12 @@ async function scrapeUmmaTVUrl(content, date, season, episode, type) {
 }
 
 async function scrapeTVUrl(content, date, season, episode) {
-    // const headers = execSync("python3 src/enter.py").toString().split('|');
-    // const cookies = JSON.parse(headers[1])
-
-    // const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true});
-    // const page = await browser.newPage();
-    // await page.setUserAgent(headers[0]);
-    // await page.setCookie(...cookies)
-    // await page.goto(URL[0] + '/search/keyword/' + safeContent(content));
-
     const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true });
     const page = await browser.newPage();
     const index = await enterSite(page);
     await page.goto(URL[index] + '/search/keyword/' + safeContent(content));
 
-    try { await page.waitForSelector('.thumbnail', {timeout: 200}); } 
-    catch (e) { }
+    try { await page.waitForSelector('.thumbnail', {timeout: 200}); } catch (e) { }
 
     await page.evaluate((content, date) => {
         const results = document.querySelectorAll("body > div > div:nth-child(3) > div > div.col-sm-8.col-lg-8.col-xs-12 > div:nth-child(2) > div.panel-body > div > div > div > div > div > div")
@@ -221,7 +173,7 @@ async function scrapeTVUrl(content, date, season, episode) {
 
     await page.waitForNetworkIdle({ idleTime: 300});
     const listing = await page.evaluate((season, episode) => {
-        thumbnail = document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src
+        try { thumbnail = document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src } catch (e) { console.log("Thumbnail Error."); thumbnail = "empty" }
         const index = Array.from(document.querySelectorAll("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-sm-12.col-lg-12 > div")).findIndex(v => v.innerText.includes(`${season} :`))
         const episodes = document.querySelectorAll(`body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-sm-12.col-lg-12 > div:nth-child(${index + 2}) > div > div > a`);
 
@@ -239,64 +191,13 @@ async function scrapeTVUrl(content, date, season, episode) {
         }
     }, season, episode);
 
-    // await page.tracing.start();
-    // try { await page.waitForSelector('.panel-player', {timeout: 500} ); } catch(e) { }
     let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
     let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
-    //console.log(video)
 
-    // try { await page.waitForNetworkIdle({timeout: 2500}); } catch (e) {}
-    // let tracing = JSON.parse(await page.tracing.stop()); 
-    // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
-    // const responses = tracing.traceEvents.filter(te => te.name === "ResourceReceiveRequest")
-    // const responses = tracing.traceEvents
-    // responses.forEach(x => {
-    //     if (map.includes(x['name'])) {
-    //         return
-    //     } else {
-    //         map.push(x['name']);
-    //     }
-    // })
-    // console.log(responses)
-    // responses.forEach(x => console.log(x.args.data))
-    // responses.forEach(x => console.log(x))
-
-    // BETTER: return url instead of aborting
-    // page.on('request', async (request) => {
-        //     if(request.url() === `${url}/assets/iovation-first-third.js` ){
-            
-            //         log(`request url is ${request.url()}: aborting`, 'warn');
-            //         return request.abort();
-            //     }
-            
-    // page.on('response', r => {
-    //     if (r.url().includes('.mp4')) { video = r.url(); console.log(r.url()) }
-    //     else if (r.url().includes('English.srt')) { subtitle = r.url(); }
-    // });
-
-    console.log(page.url())
-    // responses.forEach((val) => {
-    //     try {
-    //         temp = val['args']['data']['url'];
-    //         if (temp.includes('.mp4')) { video = temp; }
-    //         else if (temp.includes('English.srt')) { subtitle = temp; }
-    //     } catch(e) { }
-    // })
-    
-    // console.log(video)
     return { season: listing.season, episode: listing.episode, videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: listing.thumbnail }
 };
 
 async function scrapeMovieURL(content, date) {
-    // const headers = execSync("python3 src/enter.py").toString().split('|');
-    // const cookies = JSON.parse(headers[1])
-
-    // const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true});
-    // const page = await browser.newPage();
-    // await page.setUserAgent(headers[0]);
-    // await page.setCookie(...cookies)
-    // await page.goto(URL[0] + '/search/keyword/' + safeContent(content));
-
     const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true });
     const page = await browser.newPage();
     const index = await enterSite(page);
@@ -322,23 +223,9 @@ async function scrapeMovieURL(content, date) {
     await page.waitForSelector('.panel-player' );
 
     const thumbnail = await page.evaluate(() => {
-        return document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src
-    })
-
-    // try {await page.waitForNetworkIdle({timeout: 2500});} catch(e) {}
-    // let tracing = JSON.parse(await page.tracing.stop()); 
-    // // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
-    // const responses = tracing.traceEvents
-    // let video, subtitle;
-    // responses.forEach((val) => {
-    //     try {
-    //         if (val['args']['data']['url'].includes("mp4")) {
-    //             video = val['args']['data']['url']
-    //         } else if (val['args']['data']['url'].includes("English.srt")) {
-    //             subtitle = val['args']['data']['url']
-    //         }
-    //     } catch(e) {}
-    // })
+        try { thumbnail = document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src } catch (e) { console.log("Thumnail Error."); thumbnail = "empty"}
+        return thumbnail;
+    });
 
     let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
     let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);

@@ -26,8 +26,6 @@ const friendlyName = "Logan's Room TV";
 client.once('ready', (bot) => {
   console.log('Streamer is active...')
   client.user.setActivity("");  
-  //Scraper.scrapeTvUrlAxios("The Office", 2005, 4, 9);
-  //Scraper.scrapeUmmaTVUrl("The Office", 2005, 6, 1, 1);
   exec("http-server './lib/server' --cors -192.168.2.18 -p 8080", (error, stdout, stderr) => {}); // Start the subtitle server
 });
 
@@ -36,7 +34,10 @@ client.on('messageCreate', async message => {
   const type = message.channel.name === "stream-movie" ? MOVIE : TV;
   const args = message.content.slice(prefix.length).split(/ +/);
   const command = args.shift().toLowerCase();
-  const content = args.join(" ");
+  const info = args.join(" ");
+  var author = undefined;
+  try { author = info.match(/{[a-zA-Z]+}/gm).toString().replace('{', '').replace('}', '')} catch (e) { }
+  const content = info.replace(/{[a-zA-Z]+}/gm, ''); 
 
   if (command === 'stream' && !content.includes("cancel")) {
     let isolated = isolateData(content, type);
@@ -47,17 +48,17 @@ client.on('messageCreate', async message => {
       data.subtitleUrl = await uploadSubtitles(data.subtitleUrl, safe.content);
       castURL(safe.content, data.videoUrl, data.subtitleUrl, data.thumbnailUrl, friendlyName);
     } else {
-      isolated = FileSystem.readWatchingListJSON(isolated, safe, type);
+      isolated = FileSystem.readWatchingListJSON(isolated, safe, type, author);
       const data = await Scraper.scrapeTVUrl(safe.content, safe.date, isolated.season, isolated.episode);
       data.subtitleUrl = await uploadSubtitles(data.subtitleUrl, safe.content);
       castURL(safe.content, data.videoUrl, data.subtitleUrl, data.thumbnailUrl, friendlyName);
-      FileSystem.writeWatchingListJSON(data, safe, type);
+      FileSystem.writeWatchingListJSON(data, safe, type, author);
     }
 
     client.user.setActivity(`${safe.content} (${safe.date})`);
   } 
   else if (command == 'command' && !content.includes("cancel")) { 
-    const response = await Command.commandFilter(isolateData(content, COMMAND)); 
+    const response = await Command.commandFilter(isolateData(content, COMMAND), author); 
 
     if (response != -1) { 
       const channel = client.channels.cache.find(ch => ch.name.includes(`stream-${response.channel}`));
@@ -67,7 +68,6 @@ client.on('messageCreate', async message => {
 });
 
 function isolateData(message, type) {
-  // TODO: Grab data from a local JSON file to check if the show is currently being watched
   let isolated = {
     content: message.toLowerCase(),
     date: -1,
@@ -184,12 +184,10 @@ function ondeviceup(content, videoUrl, subtitleUrl, thumbnailUrl, host) {
         // });
   
         player.load(media, { autoplay: true, activeTrackIds: [1]}, function(err, status) {
+
+          // If successful, try deleting VTT file right away so subtitle files don't build up
           try { console.log('media loaded playerState=%s', status.playerState); } catch (e) { console.log(err);}
-          // if (err) {
-          //   console.log(err)
-          // } else {
-          //   console.log(status)
-          // }
+
           // // Seek to 2 minutes after 15 seconds playing.
           // setTimeout(function() {
           //   player.seek(2*60, function(err, status) {
@@ -198,6 +196,9 @@ function ondeviceup(content, videoUrl, subtitleUrl, thumbnailUrl, host) {
           // }, 15000);
   
         });
+
+      
+
       });
     });
   
@@ -260,4 +261,6 @@ function createVTTCue(caption) {
   return cue;
 }
 
-client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.-2nNSWnx8QbG2DL9xOpkFvDE-dw');
+client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.Sy3k0QXZlcwxk8M8xljnTQWnQsA');
+
+// OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.f7bc3nlGqsO0qvDQM5djHUBx9aI
