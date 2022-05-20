@@ -71,7 +71,9 @@ async function scrapeUmmaTVUrl(content, date, season, episode, type) {
     // const response = await axios.get("https://www1.ummagurau.com/watch-tv/the-office-39383.4891918").then((data => { return data.data; }));
 
     //await page.waitForTimeout(100000);
-    const browser = await puppeteer.launch( {headless: false});
+    const browser = await puppeteer.launch( {headless: false, Headers: {'User-Agent': randomUserAgent.getRandom(function (ua) {
+        return ua.osName === 'Mac Os' || ua.osName === 'Windows' && ua.browserName === 'Chrome' && ua.browserVersion >= 90;
+    })}});
     const page = await browser.newPage();
 
     const safe = await scrapeIMDB(content, date, type);
@@ -150,7 +152,7 @@ async function scrapeUmmaTVUrl(content, date, season, episode, type) {
 }
 
 async function scrapeTVUrl(content, date, season, episode) {
-    const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true });
+    const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: false });
     const page = await browser.newPage();
     const index = await enterSite(page);
     await page.goto(URL[index] + '/search/keyword/' + safeContent(content));
@@ -191,8 +193,12 @@ async function scrapeTVUrl(content, date, season, episode) {
         }
     }, season, episode);
 
+    // This is the problem
     let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
     let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+
+    console.log(`Subtitles: ${subtitles}`)
+    console.log(`Video: ${video}`)
 
     return { season: listing.season, episode: listing.episode, videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: listing.thumbnail }
 };

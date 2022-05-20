@@ -26,7 +26,7 @@ const friendlyName = "Logan's Room TV";
 client.once('ready', (bot) => {
   console.log('Streamer is active...')
   client.user.setActivity("");  
-  exec("http-server './lib/server' --cors -192.168.2.18 -p 8080", (error, stdout, stderr) => {}); // Start the subtitle server
+  exec("http-server './lib/server' --cors -192.168.2.18 -p 5000", (error, stdout, stderr) => {}); // Start the subtitle server
 });
 
 client.on('messageCreate', async message => {
@@ -159,7 +159,7 @@ function ondeviceup(content, videoUrl, subtitleUrl, thumbnailUrl, host) {
           tracks: [{
               trackId: 1,
               type: 'TEXT',
-              trackContentId: `http://192.168.2.18:8080/subtitles/${subtitleUrl}`,
+              trackContentId: `http://192.168.2.18:5000/subtitles/${subtitleUrl}`,
               trackContentType: 'text/vtt',
               name: 'English',
               language: 'en-US',
@@ -261,6 +261,4 @@ function createVTTCue(caption) {
   return cue;
 }
 
-client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.Sy3k0QXZlcwxk8M8xljnTQWnQsA');
-
-// OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.f7bc3nlGqsO0qvDQM5djHUBx9aI
+client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.EIajyfsEgV4n8VNUP64-PkAk-po');
