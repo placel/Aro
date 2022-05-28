@@ -12,6 +12,7 @@
     "axios": "^0.25.0",
     "castv2-client": "^1.2.0",
     "discord.js": "^13.5.0",
+    "find-free-port": "^2.0.0",
     "http-server": "^14.1.0",
     "jssoup": "^0.0.15",
     "mdns-js": "^1.0.3",

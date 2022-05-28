@@ -1,12 +1,13 @@
 const Scraper = require('./scraper');
 const FileSystem = require('./fileSystem');
 const Command = require('./command');
+const fp = require('find-free-port');
 
 const Cast = require('castv2-client').Client;
 const Receiver = require('castv2-client').DefaultMediaReceiver;
 const mdns = require('mdns-js');
 const fs = require('fs');
-const {exec} = require('child_process');
+const { exec } = require('child_process');
 
 const { Client, Intents } = require('discord.js');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
@@ -17,6 +18,7 @@ const COMMAND = -1;
 
 const prefix = '!';
 const friendlyName = "Logan's Room TV";
+let port = 8000;
 
 // https://developers.google.com/cast/docs/web_sender/advanced#sending_media_messages_to_the_receiver -- Keep track of movie time
 // https://developers.google.com/cast/docs/reference/messages#MediaStatus
@@ -26,7 +28,16 @@ const friendlyName = "Logan's Room TV";
 client.once('ready', (bot) => {
   console.log('Streamer is active...')
   client.user.setActivity("");  
-  exec("http-server './lib/server' --cors -192.168.2.18 -p 5000", (error, stdout, stderr) => {}); // Start the subtitle server
+
+  // Listens for a free port and starts subtitle server on that port
+  fp(port).then(([freep]) => {
+    port = freep;
+    exec(`http-server --cors -a 192.168.2.47 -p ${port}`, (error, stdout, stderr) => {
+      if (error) { console.log(error) }
+    });
+    console.log(`Server Port: ${port}`);
+  })
+
 });
 
 client.on('messageCreate', async message => {
@@ -38,6 +49,7 @@ client.on('messageCreate', async message => {
   var author = undefined;
   try { author = info.match(/{[a-zA-Z]+}/gm).toString().replace('{', '').replace('}', '')} catch (e) { }
   const content = info.replace(/{[a-zA-Z]+}/gm, ''); 
+  console.log(content);
 
   if (command === 'stream' && !content.includes("cancel")) {
     let isolated = isolateData(content, type);
@@ -45,11 +57,14 @@ client.on('messageCreate', async message => {
 
     if (type === MOVIE) {
       const data = await Scraper.scrapeMovieURL(safe.content, safe.date);
+
+      if (data == undefined) { return; }
       data.subtitleUrl = await uploadSubtitles(data.subtitleUrl, safe.content);
       castURL(safe.content, data.videoUrl, data.subtitleUrl, data.thumbnailUrl, friendlyName);
     } else {
       isolated = FileSystem.readWatchingListJSON(isolated, safe, type, author);
       const data = await Scraper.scrapeTVUrl(safe.content, safe.date, isolated.season, isolated.episode);
+      if (data == undefined) { return; }
       data.subtitleUrl = await uploadSubtitles(data.subtitleUrl, safe.content);
       castURL(safe.content, data.videoUrl, data.subtitleUrl, data.thumbnailUrl, friendlyName);
       FileSystem.writeWatchingListJSON(data, safe, type, author);
@@ -159,7 +174,7 @@ function ondeviceup(content, videoUrl, subtitleUrl, thumbnailUrl, host) {
           tracks: [{
               trackId: 1,
               type: 'TEXT',
-              trackContentId: `http://192.168.2.18:5000/subtitles/${subtitleUrl}`,
+              trackContentId: `http://192.168.2.47:${port}/lib/server/subtitles/${subtitleUrl}`,
               trackContentType: 'text/vtt',
               name: 'English',
               language: 'en-US',
@@ -261,4 +276,4 @@ function createVTTCue(caption) {
   return cue;
 }
 
-client.login('OTE3NTU4NDgyMjY0MjY4ODcw.Ya6c7Q.EIajyfsEgV4n8VNUP64-PkAk-po');
+client.login('');

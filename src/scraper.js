@@ -1,5 +1,4 @@
 const axios = require('axios');
-const {execSync} = require('child_process');
 const JSSoup = require('jssoup').default;
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
@@ -152,7 +151,7 @@ async function scrapeUmmaTVUrl(content, date, season, episode, type) {
 }
 
 async function scrapeTVUrl(content, date, season, episode) {
-    const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: false });
+    const browser = await puppeteer.launch( {args: ['--no-sandbox'], headless: true });
     const page = await browser.newPage();
     const index = await enterSite(page);
     await page.goto(URL[index] + '/search/keyword/' + safeContent(content));
@@ -193,14 +192,29 @@ async function scrapeTVUrl(content, date, season, episode) {
         }
     }, season, episode);
 
-    // This is the problem
-    let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
-    let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+    await page.tracing.start();
+    try { await page.waitForSelector('.panel-player' ); }
+    catch (e) { console.log(`${content} not found.`); return; }
 
-    console.log(`Subtitles: ${subtitles}`)
-    console.log(`Video: ${video}`)
+    try { await page.waitForNetworkIdle({timeout: 2500}); } catch (e) {}
+    let tracing = JSON.parse(await page.tracing.stop()); 
+    // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
+    const responses = tracing.traceEvents
+    let video, subtitle;
 
-    return { season: listing.season, episode: listing.episode, videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: listing.thumbnail }
+    responses.forEach((val) => {
+        try {
+            temp = val['args']['data']['url'];
+            if (temp.includes('.mp4')) { video = temp }
+            else if (temp.includes('English.srt')) { subtitle = temp }
+        } catch(e) {}
+    })
+    return { season: listing.season, episode: listing.episode, videoUrl: video, subtitleUrl: subtitle, thumbnailUrl: listing.thumbnail }
+
+    // console.log(`Subtitles: ${subtitles}`)
+    // console.log(`Video: ${video}`)
+
+    // return { season: listing.season, episode: listing.episode, videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: listing.thumbnail }
 };
 
 async function scrapeMovieURL(content, date) {
@@ -226,17 +240,34 @@ async function scrapeMovieURL(content, date) {
     }, content, date);
 
     await page.tracing.start( )
-    await page.waitForSelector('.panel-player' );
+    try { await page.waitForSelector('.panel-player' ); }
+    catch (e) { console.log(`${content} not found.`); return; }
 
     const thumbnail = await page.evaluate(() => {
         try { thumbnail = document.querySelector("body > div > div:nth-child(3) > div > div.col-sm-8 > div:nth-child(1) > div > div > div > div.col-md-5.col-lg-5.visible-md.visible-lg > div > div > img").src } catch (e) { console.log("Thumnail Error."); thumbnail = "empty"}
         return thumbnail;
     });
 
-    let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
-    let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+    try {await page.waitForNetworkIdle({timeout: 2500});} catch(e) {}
+    let tracing = JSON.parse(await page.tracing.stop()); 
+    // let responses = tracing.traceEvents.filter(te => te.name === "ResourceRecieveRequest")
+    const responses = tracing.traceEvents
+    let video, subtitle;
+    responses.forEach((val) => {
+        try {
+            if (val['args']['data']['url'].includes("mp4")) {
+                video = val['args']['data']['url']
+            } else if (val['args']['data']['url'].includes("English.srt")) {
+                subtitle = val['args']['data']['url']
+            }
+        } catch(e) {}
+    })
 
-    return { videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: thumbnail }
+    return { videoUrl: video, subtitleUrl: subtitle, thumbnailUrl: thumbnail }
+    // let subtitles = await page.waitForResponse(r => r.url().includes('English.srt'), 1);
+    // let video = await page.waitForResponse(r => r.url().includes('.mp4'), 2);
+
+    // return { videoUrl: video['_url'], subtitleUrl: subtitles['_url'], thumbnailUrl: thumbnail }
 }
 
 async function scrapeSubtitles(url) {
